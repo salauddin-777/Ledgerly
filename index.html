@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F2A3D">
+<title>Ledgerly – Personal Money Manager</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E💼%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<script src="xlsx.full.min.js"></script>
+<style>
+:root{--bg:#F2F5F8;--surface:#FFFFFF;--ink:#0F2A3D;--muted:#5B7083;--line:#DCE4EB;--brand:#0E9F8E;--brand-ink:#FFFFFF;--brand-soft:#E3F5F2;--spend:#D9822B;--spend-soft:#FBEEDD;--danger:#C8374B;--panel:#0F2A3D;--panel-ink:#EAF2F7;--panel-muted:#9DB4C4;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0A1620;--surface:#112331;--ink:#E8F0F5;--muted:#8FA6B8;--line:#1F3547;--brand:#22C3AF;--brand-ink:#06251F;--brand-soft:#12362F;--spend:#EDA24E;--spend-soft:#33260F;--danger:#F06B7E;--panel:#0C3B48;--panel-ink:#EAF6F4;--panel-muted:#9CC4C4;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0A1620;--surface:#112331;--ink:#E8F0F5;--muted:#8FA6B8;--line:#1F3547;--brand:#22C3AF;--brand-ink:#06251F;--brand-soft:#12362F;--spend:#EDA24E;--spend-soft:#33260F;--danger:#F06B7E;--panel:#0C3B48;--panel-ink:#EAF6F4;--panel-muted:#9CC4C4;color-scheme:dark}
+*{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.5 Manrope,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.hidden{display:none!important}
+/* Auth */
+.auth{min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr}
+.auth-side{background:var(--panel);color:var(--panel-ink);padding:56px;display:flex;flex-direction:column;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;letter-spacing:-.02em}
+.logo i{width:34px;height:34px;border-radius:10px;background:var(--brand);display:grid;place-items:center;color:var(--brand-ink);font-style:normal;font-size:18px}
+.auth-side h1{font-size:40px;line-height:1.1;letter-spacing:-.03em;margin:0 0 16px;max-width:14ch}
+.auth-side p{color:var(--panel-muted);max-width:38ch;margin:0}
+.auth-form{display:grid;place-items:center;padding:32px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px}
+.auth-card{width:100%;max-width:400px;border:0;background:transparent;padding:0}
+.auth-card h2{margin:0 0 4px;font-size:26px;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:0 0 22px}
+label{display:block;font-weight:600;font-size:13px;margin:0 0 6px}
+.field{margin-bottom:14px}
+input,select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--surface);min-height:44px}
+input:focus,select:focus{border-color:var(--brand)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;min-height:44px;border-radius:10px;border:1px solid transparent;background:var(--brand);color:var(--brand-ink);font-weight:700;cursor:pointer}
+.btn:hover{filter:brightness(.95)}
+.btn.block{width:100%}
+.btn.ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.btn.onpanel{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22);color:var(--panel-ink)}
+.btn.onpanel:hover{background:rgba(255,255,255,.18)}
+.link{background:none;border:0;color:var(--brand);font-weight:700;cursor:pointer;padding:0}
+.err{color:var(--danger);font-size:13px;min-height:20px;margin:4px 0 8px}
+/* App */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:12px 24px;flex-wrap:wrap}
+header.top .logo{font-size:19px;margin-right:auto}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tools input,.tools select{width:auto;min-height:40px;padding:8px 10px}
+.who{color:var(--muted);font-size:13px}
+main{max-width:1180px;margin:0 auto;padding:24px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+.stack{display:grid;gap:20px;min-width:0}
+h3{margin:0 0 14px;font-size:16px;letter-spacing:-.01em}
+.row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end}
+.grid4{display:grid;grid-template-columns:150px 1fr 1.2fr 150px;gap:12px;align-items:end}
+.grid4 .field{margin:0}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;min-width:620px}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--bg);font-size:12.5px;color:var(--muted);font-weight:700}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.tag{display:inline-block;padding:3px 10px;border-radius:99px;background:var(--brand-soft);font-size:12.5px;font-weight:600}
+.x{background:none;border:0;color:var(--danger);cursor:pointer;font-weight:700;min-height:32px;padding:0 6px}
+.empty{padding:34px 16px;text-align:center;color:var(--muted)}
+/* Balance panel */
+.panel{background:var(--panel);color:var(--panel-ink);border-radius:20px;padding:26px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 84px)}
+.panel .lbl{color:var(--panel-muted);font-size:13px;font-weight:600}
+.avail{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1.15;margin:4px 0 2px;word-break:break-word}
+.avail.neg{color:#FF8A9A}
+.bar{height:10px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;margin:16px 0 8px}
+.bar b{display:block;height:100%;width:0;background:var(--spend);border-radius:99px;transition:width .4s}
+.bar.over b{background:#FF8A9A}
+.kv{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid rgba(255,255,255,.12)}
+.kv:first-of-type{margin-top:12px}
+.kv span:last-child{font-weight:700;font-variant-numeric:tabular-nums}
+.exp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.cats{margin-top:18px;display:grid;gap:8px;font-size:13px}
+.cats div{display:flex;justify-content:space-between;color:var(--panel-muted)}
+.cats b{color:var(--panel-ink)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:10px;font-weight:600;z-index:20}
+@media (max-width:900px){
+ .auth{grid-template-columns:1fr}.auth-side{padding:28px;gap:28px}.auth-side h1{font-size:28px}
+ main{grid-template-columns:1fr;padding:16px}.panel{position:static;order:-1}
+ .grid4{grid-template-columns:1fr 1fr}.grid4 .field:nth-child(3){grid-column:1/-1}
+ header.top{padding:10px 16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- Authentication -->
+<section id="auth" class="auth hidden">
+  <div class="auth-side">
+    <div class="logo"><i>L</i>Ledgerly</div>
+    <div>
+      <h1>Know exactly what you can spend.</h1>
+      <p>Record your monthly earnings, track every daily expense, and see your available balance update instantly.</p>
+    </div>
+    <p>Export audit-ready reports in Excel and CSV.</p>
+  </div>
+  <div class="auth-form">
+    <div class="auth-card card">
+      <h2 id="authTitle">Sign in</h2>
+      <p class="sub" id="authSub">Welcome back. Enter your credentials to continue.</p>
+      <div class="field hidden" id="nameField"><label for="aName">Full name</label><input id="aName" autocomplete="name"></div>
+      <div class="field"><label for="aEmail">Email address</label><input id="aEmail" type="email" autocomplete="email"></div>
+      <div class="field"><label for="aPass">Password</label><input id="aPass" type="password" autocomplete="current-password"></div>
+      <div class="err" id="authErr" role="alert"></div>
+      <button class="btn block" id="authBtn">Sign in</button>
+      <p class="sub" style="margin:16px 0 0;text-align:center"><span id="swapText">New to Ledgerly?</span> <button class="link" id="swapBtn">Create an account</button></p>
+    </div>
+  </div>
+</section>
+
+<!-- Application -->
+<section id="app" class="hidden">
+  <header class="top">
+    <div class="logo"><i>L</i>Ledgerly</div>
+    <div class="tools">
+      <input type="month" id="month" aria-label="Month">
+      <select id="currency" aria-label="Currency"></select>
+      <span class="who" id="who"></span>
+      <button class="btn ghost" id="logout">Sign out</button>
+    </div>
+  </header>
+  <main>
+    <div class="stack">
+      <div class="card">
+        <h3>Monthly earnings</h3>
+        <div class="row">
+          <div class="field" style="margin:0"><label for="income">Total earnings for this month</label><input id="income" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+          <button class="btn" id="saveIncome">Save earnings</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Add daily expense</h3>
+        <div class="grid4">
+          <div class="field"><label for="eDate">Date</label><input id="eDate" type="date"></div>
+          <div class="field"><label for="eCat">Category</label><select id="eCat"></select></div>
+          <div class="field"><label for="eDesc">Description</label><input id="eDesc" maxlength="80" placeholder="e.g. Weekly groceries"></div>
+          <div class="field"><label for="eAmt">Amount</label><input id="eAmt" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+        </div>
+        <div class="err" id="expErr" role="alert" style="margin-top:10px"></div>
+        <button class="btn" id="addExp">Add expense</button>
+      </div>
+      <div class="card">
+        <h3>Expense register</h3>
+        <div class="wrap"><table>
+          <thead><tr><th>Date</th><th>Category</th><th>Description</th><th class="n">Amount</th><th class="n">Balance after</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table></div>
+      </div>
+    </div>
+    <aside class="panel" aria-label="Balance summary">
+      <div class="lbl">Available balance</div>
+      <div class="avail" id="avail">0.00</div>
+      <div class="lbl" id="availNote">Set your earnings to begin</div>
+      <div class="bar" id="bar"><b></b></div>
+      <div class="lbl" id="pct">0% of earnings spent</div>
+      <div class="kv"><span>Total earnings</span><span id="kIn">0.00</span></div>
+      <div class="kv"><span>Total expenses</span><span id="kOut">0.00</span></div>
+      <div class="kv"><span>Transactions</span><span id="kCnt">0</span></div>
+      <div class="cats" id="cats"></div>
+      <div class="exp">
+        <button class="btn onpanel" id="xlsx">Excel (.xlsx)</button>
+        <button class="btn onpanel" id="csv">CSV (.csv)</button>
+      </div>
+    </aside>
+  </main>
+</section>
+<div class="toast hidden" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+const CATS=["Housing & Rent","Food & Groceries","Transport","Utilities & Bills","Health & Insurance","Education","Entertainment","Shopping","Savings & Investment","Other"];
+const CURS=["USD","EUR","GBP","BDT","INR","AED","SAR","CAD","AUD","JPY","SGD","MYR"];
+const $=id=>document.getElementById(id);
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){toast("Storage is unavailable in this browser.")}}};
+let user=null,data=null,mode="login";
+
+function toast(m){const t=$("toast");t.textContent=m;t.classList.remove("hidden");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.add("hidden"),2400)}
+async function hash(p,salt){
+  const s=salt+"|"+p;
+  if(window.crypto&&crypto.subtle){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("")}
+  let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return "f"+h;
+}
+/* ---------- Auth ---------- */
+function setMode(m){
+  mode=m;const reg=m==="register";
+  $("authTitle").textContent=reg?"Create your account":"Sign in";
+  $("authSub").textContent=reg?"Start tracking your money in under a minute.":"Welcome back. Enter your credentials to continue.";
+  $("nameField").classList.toggle("hidden",!reg);
+  $("authBtn").textContent=reg?"Create account":"Sign in";
+  $("swapText").textContent=reg?"Already registered?":"New to Ledgerly?";
+  $("swapBtn").textContent=reg?"Sign in":"Create an account";
+  $("aPass").autocomplete=reg?"new-password":"current-password";$("authErr").textContent="";
+}
+async function submitAuth(){
+  const email=$("aEmail").value.trim().toLowerCase(),pass=$("aPass").value,name=$("aName").value.trim(),err=$("authErr");
+  if(!/^\S+@\S+\.\S+$/.test(email)){err.textContent="Enter a valid email address.";return}
+  if(pass.length<6){err.textContent="Password must contain at least 6 characters.";return}
+  const users=store.get("lg_users")||{};const h=await hash(pass,email);
+  if(mode==="register"){
+    if(!name){err.textContent="Enter your full name.";return}
+    if(users[email]){err.textContent="An account with this email already exists. Sign in instead.";return}
+    users[email]={name,h};store.set("lg_users",users);
+  }else if(!users[email]||users[email].h!==h){err.textContent="Email or password is incorrect.";return}
+  store.set("lg_session",email);start(email,users[email].name);
+}
+function start(email,name){
+  user={email,name};
+  data=store.get("lg_data_"+email)||{currency:"USD",months:{}};
+  $("auth").classList.add("hidden");$("app").classList.remove("hidden");
+  $("who").textContent=name;$("currency").value=data.currency;
+  if(!$("month").value)$("month").value=new Date().toISOString().slice(0,7);
+  $("eDate").value=defaultDate();render();
+}
+function logout(){try{localStorage.removeItem("lg_session")}catch(e){}user=null;$("app").classList.add("hidden");$("auth").classList.remove("hidden");$("aPass").value=""}
+/* ---------- Data ---------- */
+const ym=()=>$("month").value;
+function cur(){const k=ym();if(!data.months[k])data.months[k]={income:0,expenses:[]};return data.months[k]}
+function save(){store.set("lg_data_"+user.email,data)}
+function money(n){try{return new Intl.NumberFormat(undefined,{style:"currency",currency:data.currency}).format(n)}catch(e){return n.toFixed(2)}}
+function defaultDate(){const t=new Date().toISOString().slice(0,10);return t.slice(0,7)===ym()?t:ym()+"-01"}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function sorted(){return cur().expenses.slice().sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id)}
+function render(){
+  const m=cur(),list=sorted(),spent=list.reduce((s,e)=>s+e.amount,0),avail=m.income-spent;
+  $("income").value=m.income||"";
+  $("avail").textContent=money(avail);$("avail").classList.toggle("neg",avail<0);
+  $("availNote").textContent=m.income?(avail<0?"You have exceeded this month’s earnings":"Remaining to spend this month"):"Set your earnings to begin";
+  const p=m.income?Math.min(100,spent/m.income*100):0;
+  $("bar").firstElementChild.style.width=p+"%";$("bar").classList.toggle("over",avail<0);
+  $("pct").textContent=(m.income?Math.round(spent/m.income*100):0)+"% of earnings spent";
+  $("kIn").textContent=money(m.income);$("kOut").textContent=money(spent);$("kCnt").textContent=list.length;
+  const by={};list.forEach(e=>by[e.cat]=(by[e.cat]||0)+e.amount);
+  $("cats").innerHTML=Object.entries(by).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([c,v])=>`<div><span>${esc(c)}</span><b>${money(v)}</b></div>`).join("");
+  let run=m.income;
+  $("rows").innerHTML=list.length?list.map(e=>{run-=e.amount;return `<tr><td>${e.date}</td><td><span class="tag">${esc(e.cat)}</span></td><td>${esc(e.desc||"–")}</td><td class="n">${money(e.amount)}</td><td class="n">${money(run)}</td><td><button class="x" data-id="${e.id}" aria-label="Delete expense">Delete</button></td></tr>`}).join(""):`<tr><td colspan="6" class="empty">No expenses recorded for this month. Add your first expense above.</td></tr>`;
+}
+/* ---------- Actions ---------- */
+function saveIncome(){const v=parseFloat($("income").value);if(isNaN(v)||v<0){toast("Enter a valid earnings amount.");return}cur().income=v;save();render();toast("Earnings saved.")}
+function addExp(){
+  const date=$("eDate").value,amt=parseFloat($("eAmt").value),err=$("expErr");
+  if(!date||isNaN(amt)||amt<=0){err.textContent="Enter a date and an amount greater than zero.";return}
+  if(date.slice(0,7)!==ym()){err.textContent="The date must fall within the selected month.";return}
+  err.textContent="";cur().expenses.push({id:Date.now(),date,cat:$("eCat").value,desc:$("eDesc").value.trim(),amount:Math.round(amt*100)/100});
+  save();$("eDesc").value="";$("eAmt").value="";render();toast("Expense added.")
+}
+function del(id){const m=cur();m.expenses=m.expenses.filter(e=>e.id!==id);save();render()}
+/* ---------- Reports ---------- */
+function report(){
+  const m=cur(),list=sorted(),spent=list.reduce((s,e)=>s+e.amount,0);
+  let run=m.income;
+  const head=["No.","Date","Category","Description","Expense ("+data.currency+")","Balance ("+data.currency+")"];
+  const body=list.map((e,i)=>{run-=e.amount;return [i+1,e.date,e.cat,e.desc,e.amount,Math.round(run*100)/100]});
+  const sum=[["Ledgerly – Monthly Financial Report"],["Account holder",user.name],["Email",user.email],["Period",ym()],["Currency",data.currency],["Generated",new Date().toISOString().slice(0,16).replace("T"," ")],[],["Total earnings",m.income],["Total expenses",Math.round(spent*100)/100],["Available balance",Math.round((m.income-spent)*100)/100],["Transactions",list.length]];
+  const by={};list.forEach(e=>by[e.cat]=(by[e.cat]||0)+e.amount);
+  const cat=[["Category","Total ("+data.currency+")","Share of earnings"]].concat(Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([c,v])=>[c,Math.round(v*100)/100,m.income?(v/m.income*100).toFixed(1)+"%":"–"]));
+  return {head,body,sum,cat,spent,m};
+}
+async function saveFile(name,b64,mime){
+  const C=window.Capacitor;
+  if(C&&C.isNativePlatform&&C.isNativePlatform()&&C.Plugins&&C.Plugins.Filesystem&&C.Plugins.Share){
+    try{const w=await C.Plugins.Filesystem.writeFile({path:name,data:b64,directory:"CACHE"});await C.Plugins.Share.share({title:name,url:w.uri,dialogTitle:"Save or share your report"});return true}
+    catch(e){toast("The report could not be saved. Please try again.");return false}
+  }
+  const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([u],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);return true
+}
+async function exportCSV(){
+  const r=report(),q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+  const lines=[r.head].concat(r.body,[["","","","Total earnings",r.m.income,""],["","","","Total expenses",Math.round(r.spent*100)/100,""],["","","","Available balance","",Math.round((r.m.income-r.spent)*100)/100]]);
+  const text="\ufeff"+lines.map(l=>l.map(q).join(",")).join("\r\n");
+  if(await saveFile(`Ledgerly_Report_${ym()}.csv`,btoa(unescape(encodeURIComponent(text))),"text/csv"))toast("CSV report ready.")
+}
+async function exportXLSX(){
+  if(!window.XLSX){toast("The Excel library failed to load.");return}
+  const r=report(),wb=XLSX.utils.book_new();
+  const s1=XLSX.utils.aoa_to_sheet(r.sum);s1["!cols"]=[{wch:24},{wch:34}];
+  const s2=XLSX.utils.aoa_to_sheet([r.head].concat(r.body,[[],["","","","Total expenses",Math.round(r.spent*100)/100,""],["","","","Available balance","",Math.round((r.m.income-r.spent)*100)/100]]));
+  s2["!cols"]=[{wch:6},{wch:12},{wch:24},{wch:36},{wch:18},{wch:18}];s2["!autofilter"]={ref:"A1:F"+(r.body.length+1)};
+  const s3=XLSX.utils.aoa_to_sheet(r.cat);s3["!cols"]=[{wch:26},{wch:18},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,s1,"Summary");XLSX.utils.book_append_sheet(wb,s2,"Expenses");XLSX.utils.book_append_sheet(wb,s3,"By Category");
+  const b64=XLSX.write(wb,{bookType:"xlsx",type:"base64"});
+  if(await saveFile(`Ledgerly_Report_${ym()}.xlsx`,b64,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))toast("Excel report ready.")
+}
+/* ---------- Init ---------- */
+$("eCat").innerHTML=CATS.map(c=>`<option>${c}</option>`).join("");
+$("currency").innerHTML=CURS.map(c=>`<option>${c}</option>`).join("");
+$("authBtn").onclick=submitAuth;
+$("swapBtn").onclick=()=>setMode(mode==="login"?"register":"login");
+$("aPass").addEventListener("keydown",e=>{if(e.key==="Enter")submitAuth()});
+$("logout").onclick=logout;$("saveIncome").onclick=saveIncome;$("addExp").onclick=addExp;
+$("eAmt").addEventListener("keydown",e=>{if(e.key==="Enter")addExp()});
+$("rows").addEventListener("click",e=>{const b=e.target.closest(".x");if(b)del(+b.dataset.id)});
+$("month").onchange=()=>{$("eDate").value=defaultDate();render()};
+$("currency").onchange=e=>{data.currency=e.target.value;save();render()};
+$("csv").onclick=exportCSV;$("xlsx").onclick=exportXLSX;
+const s=store.get("lg_session"),us=store.get("lg_users")||{};
+if(s&&us[s])start(s,us[s].name);else{$("auth").classList.remove("hidden");setMode("login")}
+})();
+</script>
+</body>
+</html>
